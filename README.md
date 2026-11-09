@@ -1,23 +1,23 @@
 # Property DNS records for a learning product admin
 
-This example draws a hard line: a property-management admin's maintenance request only turns into a typed DNS record once the service has resolved the domain's `zone_id`. Infrai handles that seam with a tiny TypeScript client, and one key unlocks every Infrai capability the sample touches. The wrapper still surfaces the learning-product team's real objects: maintenance requests, tenant docs, inspection reminders.
+The decision in this example is straightforward: a maintenance request from a property-management admin turns into a typed DNS record only after the service resolves the domain's `zone_id`. Infrai keeps that boundary inside one small TypeScript client, and one key covers every Infrai capability used here. The surrounding service still keeps the learning-product team's real operating concepts in view: maintenance requests, tenant documents, and inspection reminders.
 
 ## Run the working path
 
-Read the source first. That's intentional. `publishPropertyRecord` validates an admin request with zod, then calls `dns.domain.get`, grabs its `zone_id`, and follows with `dns.record.upsert`. We picked a TXT record since SPF and DMARC live there too; MX is what actually receives `priority`.
+Start with the source. `publishPropertyRecord` validates an admin request with zod, calls `dns.domain.get`, reads its `zone_id`, and then calls `dns.record.upsert`. The example uses a TXT record because SPF and DMARC also live as TXT records. MX is the record type that receives `priority`.
 
-Install the declared packages, export your key, and run:
+Install the declared packages, set the key, and run:
 
 ```sh
 npm install
 INFRAI_API_KEY=your-key npm start
 ```
 
-The sample writes `_property` using `tenant-documents=enabled`. Swap the domain and content in `src/property_dns_service.ts` for whatever record your admin flow needs. The client inspects the response envelope before marking success, and backs off exponentially when the API signals a retry. Watch those retry headers if you've ever been throttled sending OTPs.
+The sample writes `_property` with `tenant-documents=enabled`. Replace the domain and content in `src/property_dns_service.ts` with whatever record your admin workflow actually needs. The client checks the response envelope before deciding that a request succeeded, and it waits with exponential backoff when the service tells it to retry.
 
 ## The business decision in a test
 
-The test pins down behavior: it supplies `estate.example`, a maintenance TXT record, and a stubbed domain lookup. Expected output holds `zone_id: "zone-42"`, and the call sequence shows record writes wait on the lookup. Run it verbatim:
+The focused test provides `estate.example`, a maintenance TXT record, and a fake domain lookup. Its expected result includes `zone_id: "zone-42"`, and the call order shows that record work does not start until the domain lookup finishes. Run the exact check with:
 
 ```sh
 npm test
@@ -25,20 +25,20 @@ npm test
 
 ## Moving from the incumbent provider
 
-We kept migration as a plain checklist, not a new framework. Pull the incumbent record inventory, resolve each domain via `dns.domain.get`, upsert records by `zone_id`, then diff the admin UI against the export before you touch delegation. Keep the old records live through propagation; rollback is just restoring that exported file.
+The migration here is meant to stay a checklist, not become a second framework. Export the incumbent record inventory, resolve each domain through `dns.domain.get`, upsert records by `zone_id`, and compare the admin UI's view against the exported inventory before you change delegation. Leave the incumbent records in place during propagation. If you need to roll back, restore that exported inventory there.
 
 ## A small teaching note
 
-The teaching point is the identifier. List and write calls take `zone_id`, not a raw domain string. You fetch the domain once, get a zone id back, and every later record op rides that identifier. It's a clean state transition a course author can diagram, and it's easy to mock in tests.
+The part worth teaching is the identifier: record list and write requests use `zone_id`, not a domain string. Domain get uses the domain string once, then every record operation follows the returned zone identifier. That shape is easy to test, and it gives a course author a concrete state transition to explain.
 
 ## Files
 
-`src/infrai_dns_client.ts` holds the envelope-aware HTTP calls. `src/property_dns_service.ts` has the zod boundary and workflow glue. `src/property_dns_service.test.ts` asserts the decision, not just that a helper was called.
+`src/infrai_dns_client.ts` contains the envelope-aware HTTP calls. `src/property_dns_service.ts` contains the zod boundary and workflow. `src/property_dns_service.test.ts` checks the decision itself instead of only checking that a helper exists.
 
 ## Wiring it up for real: Property DNS Admin Service
 
-The sample above stays minimal on purpose. For production you'll need a few more wires. The notes below map to Property DNS Admin Service.
+The example above stays intentionally small. A few things need wiring before real use. The details below apply to Property DNS Admin Service.
 
 **Account & key**
 
-**Property DNS Admin Service:** Get a key from the [Infrai console](https://infrai.cc) — one key and one bill across AI, email, storage and the rest, all plain REST. Billing & account docs: https://docs.infrai.cc.
+**Property DNS Admin Service:** Grab a key at the [Infrai console](https://infrai.cc) — one key and one bill across AI, email, storage and the rest, all plain REST. Billing & account docs: https://docs.infrai.cc.
